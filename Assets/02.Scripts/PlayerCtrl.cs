@@ -9,12 +9,17 @@ public class PlayerCtrl : MonoBehaviour
     public GameObject avatar;
 
     private bool isJumping = false;
+    private bool isAttackReady = true;
+
     private float h = 0f;
     private float v = 0f;
     private float speed = 0f;
     private float speedBack = 1f;
-    public float rotSpeed = 1.5f;
+    private float attackdelay = 0f;
+
     private Animator animator;
+
+    public Weapon equipWeapon;
     // Start is called before the first frame update
 
     private void Awake()
@@ -23,7 +28,22 @@ public class PlayerCtrl : MonoBehaviour
     }
     void Start()
     {
-        
+        Transform[] allChildren = GetComponentsInChildren<Transform>();
+        foreach(Transform Child in allChildren)
+        {
+            if(Child.name == "Weapon_RH")
+            {
+                if (Child != null)
+                {
+                    GameObject Weapon = Child.transform.GetChild(0).gameObject;
+                    if (Weapon != null)
+                    {
+                        Debug.Log("무기 찾았데!");
+                        equipWeapon = Weapon.GetComponent<Weapon>();
+                    }
+                }
+            }
+        }
     }
 
     // Update is called once per frame
@@ -44,6 +64,7 @@ public class PlayerCtrl : MonoBehaviour
         transform.Translate(new Vector3(h, 0f, v).normalized * walkSpeed * speedBack * Time.deltaTime);
 
         Jump();
+        Attack();
     }
 
     private void Jump()
@@ -57,6 +78,34 @@ public class PlayerCtrl : MonoBehaviour
                 GetComponent<Rigidbody>().AddForce(Vector3.up * jumpPower, ForceMode.Impulse);
             }
         }
+    }
+
+    private void Attack()
+    {
+        if (equipWeapon == null)
+            return;
+        if (!isAttackReady)
+        {
+            attackdelay += Time.deltaTime;
+            isAttackReady = equipWeapon.rate < attackdelay;
+        }
+
+        if(Input.GetMouseButtonDown(0) && isAttackReady && !isJumping)
+        {
+            Debug.Log("공격!");
+            isAttackReady = false;
+            equipWeapon.Use();
+            attackdelay = 0f;
+            StopCoroutine("TestCoru");
+            StartCoroutine("TestCoru");
+        }
+
+    }
+
+    IEnumerator TestCoru()
+    {
+        Debug.Log("테스트 코루틴입니당.");
+        yield return null;
     }
 
     private void OnCollisionEnter(Collision collision)
