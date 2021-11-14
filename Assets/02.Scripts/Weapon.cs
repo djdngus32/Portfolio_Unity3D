@@ -18,19 +18,17 @@ public class Weapon : MonoBehaviour
         {
             StopCoroutine("Slash");
             StartCoroutine("Slash");
-            Debug.Log("무기사용!");
         }
     }
 
     IEnumerator Slash()
     {
-        yield return new WaitForSeconds(0.1f);
-        Debug.Log("공격이 발생했다네!!!");
+        yield return new WaitForSeconds(0.3f);
         hitBox.enabled = true;
+        yield return new WaitForSeconds(0.1f);
         trail.enabled = true;
         yield return new WaitForSeconds(0.3f);
         hitBox.enabled = false;
-        yield return new WaitForSeconds(0.3f);
         trail.enabled = false;
     }
 }

@@ -8,14 +8,18 @@ public class PlayerCtrl : MonoBehaviour
     public float jumpPower = 6f;
     public GameObject avatar;
 
+    private bool isMove = true;
     private bool isJumping = false;
     private bool isAttackReady = true;
+    private bool isMotionEnd = false;
 
     private float h = 0f;
     private float v = 0f;
     private float speed = 0f;
     private float speedBack = 1f;
     private float attackdelay = 0f;
+
+    private Vector3 moveVec;
 
     private Animator animator;
 
@@ -28,43 +32,49 @@ public class PlayerCtrl : MonoBehaviour
     }
     void Start()
     {
-        Transform[] allChildren = GetComponentsInChildren<Transform>();
-        foreach(Transform Child in allChildren)
-        {
-            if(Child.name == "Weapon_RH")
-            {
-                if (Child != null)
-                {
-                    GameObject Weapon = Child.transform.GetChild(0).gameObject;
-                    if (Weapon != null)
-                    {
-                        Debug.Log("무기 찾았데!");
-                        equipWeapon = Weapon.GetComponent<Weapon>();
-                    }
-                }
-            }
-        }
+        animator.SetBool("isEquipWeapon", true);
     }
 
     // Update is called once per frame
     void Update()
     {
+        CheckMotion();
         h = Input.GetAxisRaw("Horizontal");
         v = Input.GetAxisRaw("Vertical");
         speed = new Vector3(h, 0f, v).normalized.magnitude;
-        animator.SetFloat("h", h);
-        animator.SetFloat("v", v);
-        animator.SetFloat("speed", speed);
+        moveVec = new Vector3(h, 0f, v).normalized;
+        if (!isAttackReady)
+        {
+            moveVec = Vector3.zero;
 
-        if (v < 0)
-            speedBack = 0.6f;
+        }
+
+        if (isMove)
+        {
+            animator.SetFloat("h", h);
+            animator.SetFloat("v", v);
+            animator.SetFloat("speed", speed);
+
+            if (v < 0)
+                speedBack = 0.6f;
+            else
+                speedBack = 1f;
+
+            transform.Translate( moveVec * walkSpeed * speedBack * Time.deltaTime);
+        }
         else
-            speedBack = 1f;
+        {
 
-        transform.Translate(new Vector3(h, 0f, v).normalized * walkSpeed * speedBack * Time.deltaTime);
+        }
 
         Jump();
         Attack();
+    }
+
+    private void CheckMotion()
+    {
+        if (!isMotionEnd && animator.GetCurrentAnimatorStateInfo(0).IsTag("Attack") && animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.82f)
+            isMotionEnd = true;
     }
 
     private void Jump()
@@ -87,26 +97,25 @@ public class PlayerCtrl : MonoBehaviour
         if (!isAttackReady)
         {
             attackdelay += Time.deltaTime;
-            isAttackReady = equipWeapon.rate < attackdelay;
+            if (isMotionEnd)
+            {
+                isAttackReady = equipWeapon.rate < attackdelay;
+                isMove = true;
+            }
         }
 
-        if(Input.GetMouseButtonDown(0) && isAttackReady && !isJumping)
+        if(Input.GetMouseButtonDown(0) && isAttackReady && !isJumping && isMove)
         {
-            Debug.Log("공격!");
             isAttackReady = false;
+            isMove = false;
+            isMotionEnd = false;
             equipWeapon.Use();
+            animator.SetTrigger("doAttack");
             attackdelay = 0f;
-            StopCoroutine("TestCoru");
-            StartCoroutine("TestCoru");
         }
 
     }
 
-    IEnumerator TestCoru()
-    {
-        Debug.Log("테스트 코루틴입니당.");
-        yield return null;
-    }
 
     private void OnCollisionEnter(Collision collision)
     {
