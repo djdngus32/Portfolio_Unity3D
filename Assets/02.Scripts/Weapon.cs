@@ -31,4 +31,13 @@ public class Weapon : MonoBehaviour
         hitBox.enabled = false;
         trail.enabled = false;
     }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.tag == "Monster")
+        {
+            other.GetComponent<Status>().SetDamage(damage);
+        }
+    }
+
 }

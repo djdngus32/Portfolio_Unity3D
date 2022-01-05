@@ -13,6 +13,9 @@ public class PlayerCtrl : MonoBehaviour
     private bool isAttackReady = true;
     private bool isMotionEnd = false;
 
+    // Key kd : key down, 
+    private bool kdInteraction = false;
+
     private float h = 0f;
     private float v = 0f;
     private float speed = 0f;
@@ -23,12 +26,18 @@ public class PlayerCtrl : MonoBehaviour
 
     private Animator animator;
 
-    public Weapon equipWeapon;
+    private GameObject nearObject;
+    private GameObject rightHand;
+    public GameObject curWeapon;
     // Start is called before the first frame update
 
     private void Awake()
     {
         animator = avatar.GetComponent<Animator>();
+
+        #region FindRightHand
+        rightHand = FindInnerObject(avatar, "Weapon_RH");
+        #endregion
     }
     void Start()
     {
@@ -41,6 +50,7 @@ public class PlayerCtrl : MonoBehaviour
         CheckMotion();
         h = Input.GetAxisRaw("Horizontal");
         v = Input.GetAxisRaw("Vertical");
+        kdInteraction = Input.GetButtonDown("Interaction");
         speed = new Vector3(h, 0f, v).normalized.magnitude;
         moveVec = new Vector3(h, 0f, v).normalized;
         if (!isAttackReady)
@@ -69,6 +79,7 @@ public class PlayerCtrl : MonoBehaviour
 
         Jump();
         Attack();
+        Interaction();
     }
 
     private void CheckMotion()
@@ -92,14 +103,19 @@ public class PlayerCtrl : MonoBehaviour
 
     private void Attack()
     {
-        if (equipWeapon == null)
+        Weapon weapon = null;
+        if (curWeapon != null)
+        {
+            weapon = curWeapon.GetComponent<Weapon>();
+        }
+        else
             return;
         if (!isAttackReady)
         {
             attackdelay += Time.deltaTime;
             if (isMotionEnd)
             {
-                isAttackReady = equipWeapon.rate < attackdelay;
+                isAttackReady = weapon.rate < attackdelay;
                 isMove = true;
             }
         }
@@ -109,11 +125,93 @@ public class PlayerCtrl : MonoBehaviour
             isAttackReady = false;
             isMove = false;
             isMotionEnd = false;
-            equipWeapon.Use();
+            weapon.Use();
             animator.SetTrigger("doAttack");
             attackdelay = 0f;
         }
 
+    }
+
+    private void Interaction()
+    {
+        if (kdInteraction && !isJumping)
+        {
+            if (nearObject != null)
+            {
+                if (nearObject.tag == "Item")
+                {
+                    if (nearObject.GetComponent<Item>().type == Item.Type.Weapon)
+                    {
+                        Equip(nearObject);
+                    }
+                }
+            }
+        }
+    }
+
+    private void Equip(GameObject item)
+    {
+        #region Weapon
+        if(item.GetComponent<Item>().type == Item.Type.Weapon)
+        {
+            GameObject weapon = item.transform.GetChild(0).gameObject;
+            if (rightHand != null)
+            {
+                Debug.Log("무기 있데");
+                
+                if (rightHand.transform.GetChild(0) != null)
+                {
+                    Debug.Log("원래 무기 가지고있으니가 없애고 바꾼다");
+                    Debug.Log(item.name);
+                    Debug.Log(rightHand.name);
+                    Destroy(rightHand.transform.GetChild(0).gameObject);
+                    weapon.transform.parent = rightHand.transform;
+                    //item.transform.GetChild(0).parent = rightHand.transform;
+                    weapon.transform.localPosition = Vector3.zero;
+                    weapon.transform.localRotation = Quaternion.identity;
+                    weapon.transform.localScale = Vector3.one;
+                    Destroy(item);
+                    //Destroy(item.GetComponent<Rigidbody>());
+                    //Destroy(item.GetComponent<Collider>());
+
+                }
+                else
+                {
+                    //item.transform.parent = rightHand.transform;
+                    weapon.transform.parent = rightHand.transform;
+                    weapon.transform.localPosition = Vector3.zero;
+                    weapon.transform.localRotation = Quaternion.identity;
+                    weapon.transform.localScale = Vector3.one;
+                    //Destroy(item.GetComponent<Rigidbody>());
+                    //Destroy(item.GetComponent<Collider>());
+                    Destroy(item);
+                }
+            }
+            curWeapon = weapon;
+        }
+        #endregion
+    }
+
+    private static GameObject innerObject;
+
+    private static GameObject FindInnerObject(GameObject parent, string name)
+    {
+        foreach(Transform child in parent.transform)
+        {
+            //Debug.Log("찾아볼까?");
+            if(child.name == name)
+            {
+                //Debug.Log("찾았다!");
+                innerObject =  child.gameObject;
+                break;
+            }
+            else
+            {
+                //Debug.Log("깊숙히");
+                FindInnerObject(child.gameObject, name);
+            }
+        }
+        return innerObject;
     }
 
 
@@ -126,6 +224,14 @@ public class PlayerCtrl : MonoBehaviour
                 isJumping = false;
                 animator.SetBool("isJumping", isJumping);
             }
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if(other.gameObject.CompareTag("Item"))
+        {
+            nearObject = other.gameObject;
         }
     }
 }
