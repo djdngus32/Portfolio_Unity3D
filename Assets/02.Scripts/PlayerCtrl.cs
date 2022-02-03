@@ -58,23 +58,28 @@ public class PlayerCtrl : MonoBehaviour
             moveVec = Vector3.zero;
 
         }
-
-        if (isMove)
+        if(Input.GetKey(KeyCode.LeftAlt))
         {
-            animator.SetFloat("h", h);
-            animator.SetFloat("v", v);
-            animator.SetFloat("speed", speed);
-
-            if (v < 0)
-                speedBack = 0.6f;
-            else
-                speedBack = 1f;
-
-            transform.Translate( moveVec * walkSpeed * speedBack * Time.deltaTime);
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
         }
         else
         {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+            if (isMove)
+            {
+                animator.SetFloat("h", h);
+                animator.SetFloat("v", v);
+                animator.SetFloat("speed", speed);
 
+                if (v < 0)
+                    speedBack = 0.6f;
+                else
+                    speedBack = 1f;
+
+                transform.Translate(moveVec * walkSpeed * speedBack * Time.deltaTime);
+            }
         }
 
         Jump();
